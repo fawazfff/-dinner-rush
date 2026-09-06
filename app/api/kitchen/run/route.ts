@@ -4,88 +4,55 @@ import { startKitchenRuntime } from "@/lib/kitchen/runtime";
 import type { KitchenStreamEvent } from "@/lib/kitchen/types";
 
 export const runtime = "nodejs";
-export const maxDuration = 30;
+export const maxDuration = 60;
 
-const menuItemSchema = z.enum(["burger", "fries", "salad"]);
+export const menuIds = [
+  "burger", "fries", "plantain", "grilled-chicken", "fried-chicken", "jollof-rice", "fried-rice",
+  "pasta", "steak", "fish", "wings", "salad", "sandwich", "yam-fries", "vegetable-bowl",
+] as const;
 
+const menuItemSchema = z.enum(menuIds);
 const bodySchema = z.object({
   scenario: z.enum(["rush", "fryer", "allergy", "full"]).default("full"),
-  menu: z.array(menuItemSchema).min(1).max(3).default(["burger", "fries", "salad"]),
+  menu: z.array(menuItemSchema).min(1).max(10),
 });
 
-const componentIdsByMenuItem = {
-  burger: ["buns", "burgers"],
-  fries: ["fries"],
-  salad: ["salad"],
-} as const;
-
-const menuLabels = {
-  burger: "smash burger",
-  fries: "house fries",
-  salad: "chopped salad",
-} as const;
-
 export async function POST(request: Request) {
-  const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
-  if (!parsed.success) {
-    return Response.json({ error: "Choose at least one menu item and a valid kitchen scenario." }, { status: 400 });
+  if (!process.env.OPENAI_API_KEY) {
+    return Response.json(
+      { error: "Live inference is not configured. Add OPENAI_API_KEY in Vercel. Dinner Rush no longer falls back to a scripted demo." },
+      { status: 503 },
+    );
   }
+
+  const parsed = bodySchema.safeParse(await request.json().catch(() => ({})));
+  if (!parsed.success) return Response.json({ error: "Choose between 1 and 10 menu items." }, { status: 400 });
 
   const encoder = new TextEncoder();
   let stopRuntime: (() => void) | undefined;
-
   const stream = new ReadableStream<Uint8Array>({
     start(controller) {
       let closed = false;
       const send = (event: KitchenStreamEvent) => {
-        if (closed) return;
-        controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
+        if (!closed) controller.enqueue(encoder.encode(`data: ${JSON.stringify(event)}\n\n`));
       };
-
       try {
-        let firstSnapshot = true;
-        const kitchen = startKitchenRuntime(parsed.data.scenario, (snapshot) => {
-          if (firstSnapshot) {
-            firstSnapshot = false;
-            return;
-          }
+        const kitchen = startKitchenRuntime(parsed.data.scenario, parsed.data.menu, (snapshot) => {
           send({ kind: snapshot.status === "complete" ? "complete" : "snapshot", snapshot });
-          if (snapshot.status === "complete") {
-            closed = true;
-            controller.close();
-          }
+          if (snapshot.status === "complete" && !closed) { closed = true; controller.close(); }
         });
-
-        const order = kitchen.state.orders[0];
-        if (order) {
-          const selectedComponentIds = new Set<string>(
-            parsed.data.menu.flatMap((item) => [...componentIdsByMenuItem[item]]),
-          );
-          order.components = order.components.filter((component) => selectedComponentIds.has(component.id));
-          order.label = parsed.data.menu.map((item) => menuLabels[item]).join(", ");
-        }
-
         send({ kind: "snapshot", snapshot: kitchen.state.snapshot() });
         stopRuntime = kitchen.stop;
       } catch (error) {
-        send({
-          kind: "error",
-          message: error instanceof Error ? error.message : "The kitchen could not start.",
-        });
+        send({ kind: "error", message: error instanceof Error ? error.message : "The live kitchen could not start." });
         closed = true;
         controller.close();
       }
     },
-    cancel() {
-      stopRuntime?.();
-    },
+    cancel() { stopRuntime?.(); },
   });
 
   return new Response(stream, {
-    headers: {
-      "Content-Type": "text/event-stream",
-      "Cache-Control": "no-cache, no-transform",
-      Connection: "keep-alive",
-    },
+    headers: { "Content-Type": "text/event-stream", "Cache-Control": "no-cache, no-transform", Connection: "keep-alive" },
   });
 }
