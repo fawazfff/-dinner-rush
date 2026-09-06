@@ -28,7 +28,16 @@ export class KitchenRuntimeState extends RuntimeState {
   readonly loops: LoopSpan[] = [];
   readonly handled = new Set<string>();
   readonly equipment = { fryerOnline: true };
-  readonly inventory = { fries: 8, salad: 6, potatoes: 10 };
+  readonly inventory: Record<string, number> = {
+    potatoes: 12,
+    plantain: 10,
+    chicken: 10,
+    beef: 8,
+    rice: 12,
+    pasta: 8,
+    vegetables: 14,
+    bread: 10,
+  };
   overlapPeak = 0;
   status: "idle" | "running" | "complete" = "idle";
   safetyGate = { passed: false, reason: "Waiting for a complete table." };
@@ -51,21 +60,9 @@ export class KitchenRuntimeState extends RuntimeState {
     }
   }
 
-  record(
-    type: string,
-    actor: string,
-    message: string,
-    tone: KitchenActivity["tone"] = "neutral",
-  ) {
-    this.activities.unshift({
-      id: crypto.randomUUID(),
-      at: Date.now(),
-      type,
-      actor,
-      message,
-      tone,
-    });
-    this.activities.splice(40);
+  record(type: string, actor: string, message: string, tone: KitchenActivity["tone"] = "neutral") {
+    this.activities.unshift({ id: crypto.randomUUID(), at: Date.now(), type, actor, message, tone });
+    this.activities.splice(80);
   }
 
   setStation(id: StationId, patch: Partial<StationState>) {
@@ -75,14 +72,7 @@ export class KitchenRuntimeState extends RuntimeState {
 
   openLoop(loopId: string, agentId: string, agentName: string, trigger: string) {
     if (this.loops.some((loop) => loop.loopId === loopId)) return;
-    this.loops.push({
-      loopId,
-      agentId,
-      agentName,
-      startedAt: Date.now(),
-      finishedAt: null,
-      trigger,
-    });
+    this.loops.push({ loopId, agentId, agentName, startedAt: Date.now(), finishedAt: null, trigger });
     this.updatePeak();
   }
 
