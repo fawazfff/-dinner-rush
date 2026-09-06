@@ -61,6 +61,14 @@ body {
   background-size: 28px 28px;
 }
 
+/* Receipt actions must stay visually obvious on the light run-outcome panel. */
+button:has(.lucide-download) {
+  background: #0d1c2b !important;
+  border-color: #0d1c2b !important;
+  color: #fff !important;
+}
+button:has(.lucide-download):hover { background: #1c3145 !important; }
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     scroll-behavior: auto !important;
