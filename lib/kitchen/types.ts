@@ -12,7 +12,7 @@ export interface StationState {
   status: StationStatus;
   task: string;
   progress: number;
-  lastDecision: string;
+  lastDecision: string | null;
   blockReason: string | null;
 }
 
