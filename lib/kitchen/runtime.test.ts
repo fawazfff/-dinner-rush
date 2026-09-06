@@ -11,17 +11,21 @@ describe("Dinner Rush live Mozaik runtime", () => {
 
   it("requires a real OpenAI key instead of silently falling back to a scripted demo", () => {
     vi.stubEnv("OPENAI_API_KEY", "");
-
-    expect(() =>
-      startKitchenRuntime("rush", ["burger", "fries"], (_snapshot: KitchenSnapshot) => undefined),
-    ).toThrow("OPENAI_API_KEY is required");
+    expect(() => startKitchenRuntime("rush", ["burger", "fries"], (_snapshot: KitchenSnapshot) => undefined)).toThrow("OPENAI_API_KEY is required");
   });
 
   it("rejects an empty or invalid menu before starting service", () => {
     vi.stubEnv("OPENAI_API_KEY", "test-key");
+    expect(() => startKitchenRuntime("rush", ["not-a-menu-item"], (_snapshot: KitchenSnapshot) => undefined)).toThrow("Select at least one valid menu item");
+  });
 
-    expect(() =>
-      startKitchenRuntime("rush", ["not-a-menu-item"], (_snapshot: KitchenSnapshot) => undefined),
-    ).toThrow("Select at least one valid menu item");
+  it("builds unique work components for a multi-dish order", () => {
+    vi.useFakeTimers();
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
+    const kitchen = startKitchenRuntime("rush", ["jollof-rice", "fried-rice", "plantain"], (_snapshot: KitchenSnapshot) => undefined);
+    const order = kitchen.state.snapshot().orders[0];
+    expect(order.components.map((component) => component.id)).toEqual(["jollof-rice:cook", "fried-rice:cook", "plantain:fry"]);
+    expect(new Set(order.components.map((component) => component.id)).size).toBe(order.components.length);
+    kitchen.stop();
   });
 });
