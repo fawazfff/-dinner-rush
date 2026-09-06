@@ -2,7 +2,7 @@ export const stationIds = ["prep", "grill", "fryer", "pantry", "expo"] as const;
 
 export type StationId = (typeof stationIds)[number];
 export type ScenarioId = "rush" | "fryer" | "allergy" | "full";
-export type RunMode = "openai-live" | "mozaik-demo";
+export type RunMode = "openai-live";
 export type StationStatus = "idle" | "thinking" | "working" | "blocked" | "ready";
 export type OrderStatus = "queued" | "cooking" | "held" | "ready" | "served";
 
@@ -17,6 +17,7 @@ export interface StationState {
 
 export interface OrderComponent {
   id: string;
+  menuItemId: string;
   name: string;
   station: StationId;
   ready: boolean;
@@ -62,7 +63,7 @@ export interface KitchenSnapshot {
   stations: StationState[];
   orders: KitchenOrder[];
   equipment: { fryerOnline: boolean };
-  inventory: { fries: number; salad: number; potatoes: number };
+  inventory: Record<string, number>;
   activities: KitchenActivity[];
   loops: LoopSpan[];
   overlapPeak: number;
