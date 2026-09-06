@@ -3,28 +3,25 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { startKitchenRuntime } from "@/lib/kitchen/runtime";
 import type { KitchenSnapshot } from "@/lib/kitchen/types";
 
-describe("Dinner Rush Mozaik runtime", () => {
+describe("Dinner Rush live Mozaik runtime", () => {
   afterEach(() => {
     vi.useRealTimers();
+    vi.unstubAllEnvs();
   });
 
-  it("runs five station loops concurrently and serves only after safety checks", async () => {
-    vi.useFakeTimers();
-    const snapshots: KitchenSnapshot[] = [];
-    const kitchen = startKitchenRuntime("full", (snapshot) => snapshots.push(snapshot));
+  it("requires a real OpenAI key instead of silently falling back to a scripted demo", () => {
+    vi.stubEnv("OPENAI_API_KEY", "");
 
-    await vi.advanceTimersByTimeAsync(5_000);
+    expect(() =>
+      startKitchenRuntime("rush", ["burger", "fries"], (_snapshot: KitchenSnapshot) => undefined),
+    ).toThrow("OPENAI_API_KEY is required");
+  });
 
-    const final = snapshots.at(-1);
-    expect(final?.status).toBe("complete");
-    expect(final?.overlapPeak).toBeGreaterThanOrEqual(5);
-    expect(final?.loops.length).toBeGreaterThan(5);
-    expect(final?.safetyGate.passed).toBe(true);
-    expect(final?.orders[0]?.status).toBe("served");
-    expect(final?.orders[0]?.allergyCleared).toBe(true);
-    expect(final?.equipment.fryerOnline).toBe(false);
-    expect(final?.stations.find((station) => station.id === "fryer")?.status).toBe("blocked");
+  it("rejects an empty or invalid menu before starting service", () => {
+    vi.stubEnv("OPENAI_API_KEY", "test-key");
 
-    kitchen.stop();
+    expect(() =>
+      startKitchenRuntime("rush", ["not-a-menu-item"], (_snapshot: KitchenSnapshot) => undefined),
+    ).toThrow("Select at least one valid menu item");
   });
 });
