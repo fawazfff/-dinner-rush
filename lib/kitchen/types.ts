@@ -3,7 +3,7 @@ export const stationIds = ["prep", "grill", "fryer", "pantry", "expo"] as const;
 export type StationId = (typeof stationIds)[number];
 export type ScenarioId = "rush" | "fryer" | "allergy" | "full";
 export type RunMode = "openai-live";
-export type StationStatus = "idle" | "thinking" | "working" | "blocked" | "ready";
+export type StationStatus = "idle" | "thinking" | "working" | "waiting" | "blocked" | "done";
 export type OrderStatus = "queued" | "cooking" | "held" | "ready" | "served";
 
 export interface StationState {
@@ -13,6 +13,7 @@ export interface StationState {
   task: string;
   progress: number;
   lastDecision: string;
+  blockReason: string | null;
 }
 
 export interface OrderComponent {
