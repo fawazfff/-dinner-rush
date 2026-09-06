@@ -58,7 +58,7 @@ export async function POST(request: Request) {
 
         const order = kitchen.state.orders[0];
         if (order) {
-          const selectedComponentIds = new Set(
+          const selectedComponentIds = new Set<string>(
             parsed.data.menu.flatMap((item) => [...componentIdsByMenuItem[item]]),
           );
           order.components = order.components.filter((component) => selectedComponentIds.has(component.id));
