@@ -14,6 +14,9 @@ export default function KitchenPage() {
         .kitchen-page button.bg-white.border-black\\/10:hover {
           background: #1c3145 !important;
         }
+        .kitchen-page button[class*="bg-[#0d1c2b]"][class*="px-4"][class*="py-2"][class*="text-xs"] {
+          display: none !important;
+        }
       `}</style>
     </div>
   );
