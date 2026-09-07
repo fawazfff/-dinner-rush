@@ -1,4 +1,4 @@
-export const stationIds = ["prep", "grill", "fryer", "pantry", "expo"] as const;
+export const stationIds = ["prep", "grill", "fryer", "pantry", "saute", "oven", "salad", "dessert", "drinks", "server"] as const;
 
 export type StationId = (typeof stationIds)[number];
 export type ScenarioId = "rush" | "fryer" | "allergy" | "full";
@@ -63,7 +63,7 @@ export interface KitchenSnapshot {
   status: "idle" | "running" | "complete";
   stations: StationState[];
   orders: KitchenOrder[];
-  equipment: { fryerOnline: boolean };
+  equipment: { fryerOnline: boolean; ovenOnline: boolean };
   inventory: Record<string, number>;
   activities: KitchenActivity[];
   loops: LoopSpan[];
